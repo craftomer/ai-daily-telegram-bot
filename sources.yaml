@@ -1,0 +1,23 @@
+general_ai:
+  - https://openai.com/blog/rss.xml
+  - https://anthropic.com/news/rss.xml
+  - https://research.google/blog/feed/
+  - https://ai.googleblog.com/atom.xml
+  - https://aws.amazon.com/blogs/machine-learning/feed/
+  - https://www.nvidia.com/en-us/research/publication/feed/
+  - https://venturebeat.com/category/ai/feed
+  - https://www.mitnews.edu/topic/artificial-intelligence2/feed
+  - https://arxiv.org/rss/cs.AI
+  - https://arxiv.org/rss/cs.LG
+  - https://huggingface.co/blog/feed.xml
+
+mobile_gaming:
+  - https://blog.unity.com/feed
+  - https://www.unrealengine.com/en-US/rss
+  - https://developer.android.com/feeds
+  - https://developer.apple.com/news/releases/rss/releases.rss
+  - https://gamedevacademy.org/feed/
+  - https://www.pocketgamer.biz/rss/
+  - https://www.gamesindustry.biz/rss
+  - https://gamingonphone.com/feed/
+  - https://blogs.windows.com/feed/

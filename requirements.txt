@@ -1,0 +1,7 @@
+feedparser==6.0.11
+requests==2.32.3
+pydantic==2.9.2
+PyYAML==6.0.2
+tenacity==9.0.0
+tqdm==4.66.5
+python-dateutil==2.9.0.post0
