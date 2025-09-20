@@ -77,7 +77,7 @@ def shorten_url(url: str) -> str:
     return u
 
 # -----------------------------
-# Summarizer
+# Summarizer (max 12 words)
 # -----------------------------
 def summarize_with_openai(title: str, text: str) -> Optional[str]:
     if not OPENAI_API_KEY:
@@ -85,35 +85,48 @@ def summarize_with_openai(title: str, text: str) -> Optional[str]:
     try:
         import json
         headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
-        prompt = f"""One sentence (max 28 words). Plain English. Focus on what changed and why it matters.
+        prompt = f"""Write a single headline-style sentence (max 12 words). No emojis. Be specific and concrete. Summarize what's new and why it matters.
 TITLE: {title}
 CONTENT: {text}"""
         body = {"model": "gpt-4.1-mini", "input": [{"role":"user","content":prompt}]}
         r = requests.post("https://api.openai.com/v1/responses", headers=headers, json=body, timeout=30)
         r.raise_for_status()
         out = r.json()
+        # Extract text robustly
+        cand = None
         if isinstance(out.get("output"), dict):
-            return normalize_text(out["output"].get("text",""))[:220]
-        if isinstance(out.get("output"), list):
+            cand = out["output"].get("text")
+        if not cand and isinstance(out.get("output"), list):
+            parts = []
             for seg in out["output"]:
                 if isinstance(seg, dict) and "content" in seg:
                     for c in seg["content"]:
-                        if c.get("type")=="output_text" and c.get("text"):
-                            return normalize_text(c["text"])[:220]
-        if "choices" in out:
+                        if c.get("type") == "output_text" and c.get("text"):
+                            parts.append(c["text"])
+            if parts:
+                cand = " ".join(parts)
+        if not cand and "choices" in out:
             for ch in out["choices"]:
                 txt = ch.get("message", {}).get("content")
-                if txt: return normalize_text(txt)[:220]
+                if txt:
+                    cand = txt
+                    break
+        if not cand:
+            return None
+        words = normalize_text(cand).split()
+        return " ".join(words[:12])
     except Exception:
         return None
-    return None
 
 def summarize(title: str, text: str) -> str:
     s = summarize_with_openai(title, text)
-    return s if s else " ".join(normalize_text(text).split()[:28])
+    if s:
+        return s
+    words = normalize_text(text).split()
+    return " ".join(words[:12])
 
 # -----------------------------
-# Craft Action rules (100+)
+# Craft Action rules (extensible)
 # -----------------------------
 def craft_action(title: str, summary: str) -> str:
     text = (title + " " + summary).lower()
@@ -196,7 +209,7 @@ def craft_action(title: str, summary: str) -> str:
         "safety": "Study Roblox Sentinel for moderation.",
         "moderation": "Test AI chat moderation in Craft games.",
 
-        # Extra categories (to make 100+ over time; add new lines freely)
+        # Extra categories
         "vr": "Explore AI-driven VR content pipelines.",
         "ar": "Test AR experiences with AI NPCs.",
         "esports": "AI-coach tools could integrate into esports titles.",
@@ -235,10 +248,11 @@ def format_item(e: dict) -> str:
     title = normalize_text(e.get("title",""))
     link = canonical_url(e.get("link",""))
     rawsum = normalize_text(html.unescape(e.get("summary",""))) or title
-    one_liner = summarize(title, rawsum)
+    one_liner = summarize(title, rawsum)  # <= 12 words
     short = shorten_url(link)
     action = craft_action(title, rawsum)
-    return f"Simple Summary: {one_liner}\n👉 {short}\nCraft Action: {action}"
+    # Bullet + short link + bold Craft Action
+    return f"• {one_liner}\n👉 {short}\n**Craft Action:** {action}"
 
 def pad_to_three(items: List[dict], pool: List[dict]) -> List[dict]:
     seen = {hash_item(normalize_text(i.get("title","")), canonical_url(i.get("link",""))) for i in items}
@@ -251,7 +265,7 @@ def pad_to_three(items: List[dict], pool: List[dict]) -> List[dict]:
 
 def build_message(gaming_items: List[dict], general_items: List[dict]) -> str:
     lines = []
-    lines.append("")  # 👈 leading blank line
+    lines.append("")  # leading blank line so username has a spacer above header
 
     # Gaming header
     lines.append("**🔵 AI IN GAMING**")
@@ -270,7 +284,6 @@ def build_message(gaming_items: List[dict], general_items: List[dict]) -> str:
         lines.append(format_item(e))
 
     return "\n".join(lines)
-
 
 # -----------------------------
 # Telegram
@@ -294,7 +307,7 @@ def send_telegram_message(text: str):
 def build_and_send():
     sources = load_sources()
     general_all = fetch_feeds(sources.get("general_ai", []))
-    mobile_all  = fetch_feeds(sources.get("mobile_gaming", []))  # <-- fixed line
+    mobile_all  = fetch_feeds(sources.get("mobile_gaming", []))
 
     # siphon mobile-relevant from general into gaming pool
     siphoned = []
