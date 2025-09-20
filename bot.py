@@ -251,17 +251,26 @@ def pad_to_three(items: List[dict], pool: List[dict]) -> List[dict]:
 
 def build_message(gaming_items: List[dict], general_items: List[dict]) -> str:
     lines = []
-    lines.append("**AI in Gaming**")
+    lines.append("")  # 👈 leading blank line
+
+    # Gaming header
+    lines.append("**🔵 AI IN GAMING**")
     for e in gaming_items:
         lines.append("")
         lines.append(format_item(e))
+
+    # Two blank lines between sections
     lines.append("")
     lines.append("")
-    lines.append("**AI in General**")
+
+    # General header
+    lines.append("**🔷 AI IN GENERAL**")
     for e in general_items:
         lines.append("")
         lines.append(format_item(e))
-    return "\n".join(lines).strip()
+
+    return "\n".join(lines)
+
 
 # -----------------------------
 # Telegram
