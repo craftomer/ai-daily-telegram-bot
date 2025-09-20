@@ -196,7 +196,7 @@ def craft_action(title: str, summary: str) -> str:
         "safety": "Study Roblox Sentinel for moderation.",
         "moderation": "Test AI chat moderation in Craft games.",
 
-        # Extra categories to reach 100+
+        # Extra categories (to make 100+ over time; add new lines freely)
         "vr": "Explore AI-driven VR content pipelines.",
         "ar": "Test AR experiences with AI NPCs.",
         "esports": "AI-coach tools could integrate into esports titles.",
@@ -285,4 +285,29 @@ def send_telegram_message(text: str):
 def build_and_send():
     sources = load_sources()
     general_all = fetch_feeds(sources.get("general_ai", []))
-    mobile_all  = fetch_feeds(source
+    mobile_all  = fetch_feeds(sources.get("mobile_gaming", []))  # <-- fixed line
+
+    # siphon mobile-relevant from general into gaming pool
+    siphoned = []
+    for e in general_all:
+        text = (e.get("title","") + " " + e.get("summary","")).lower()
+        if any(k in text for k in ["mobile","android","ios","app store","google play","unity","roblox","snapdragon"]):
+            siphoned.append(e)
+
+    gaming_pool = mobile_all + siphoned
+    general_pool = [e for e in general_all if e not in siphoned]
+
+    top_gaming = pick_top(gaming_pool, 3)
+    top_general = pick_top(general_pool, 3)
+
+    if len(top_gaming) < 3:
+        top_gaming = pad_to_three(top_gaming, general_pool)
+    if len(top_general) < 3:
+        remaining = [e for e in general_pool if e not in top_general and e not in top_gaming]
+        top_general = pad_to_three(top_general, remaining)
+
+    msg = build_message(top_gaming, top_general)
+    send_telegram_message(msg)
+
+if __name__ == "__main__":
+    build_and_send()
